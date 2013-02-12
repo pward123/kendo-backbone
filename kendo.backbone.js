@@ -30,6 +30,7 @@ function wrapBackboneCollection(model) {
         },
 
         splice: function(index, howMany) {
+            console.log("splice called");
             var itemsToInsert, removedItemx, idx, length;
 
             itemsToInsert = Array.prototype.slice.call(arguments, 2);

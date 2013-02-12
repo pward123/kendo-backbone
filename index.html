@@ -18,6 +18,9 @@
         <h3>Backbone collection</h3>
         <pre id="log">
         </pre>
+
+        <input id="submit" type="submit" value="Change It!" />
+
         <script>
                 var Product = Backbone.Model.extend({
                 });
@@ -55,6 +58,13 @@
                         data: new ProductCollectionWrapper(products)
                     }
                 });
+
+                $("#submit")
+                    .click(function(event) {
+                        event.preventDefault();
+                        products.at(0).set("Name", "More Food!");
+                    });
+
         </script>
     </body>
 </html>
