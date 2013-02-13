@@ -18,6 +18,14 @@
         <h3>Backbone collection</h3>
         <pre id="log">
         </pre>
+
+        <input id="setBackbone" type="button" value="Set Backbone" />
+        <input id="setKendo" type="button" value="Set Kendo" /><br />
+        <input id="popBackbone" type="button" value="Pop Backbone" />
+        <input id="popKendo" type="button" value="Pop Kendo" /><br />
+        <input id="pushBackbone" type="button" value="Push Backbone" />
+        <input id="pushKendo" type="button" value="Push Kendo" /><br />
+
         <script>
                 var Product = Backbone.Model.extend({
                 });
@@ -26,10 +34,17 @@
                     model: Product
                 });
 
-                var products = new ProductCollection(
-                [
-                    { ProductID: 1, Name: "Food"}, { ProductID: 2, Name: "Coffee"}
-                ]);
+                var products = new ProductCollection();
+
+                var product = new Product();
+                product.set("ProductID",1);
+                product.set("Name","Food");
+                products.push(product);
+
+                product = new Product();
+                product.set("ProductID",2);
+                product.set("Name","Coffee");
+                products.push(product);
 
                 var ProductWrapper = kendo.backboneModel(Product, {
                     ProductID: { type: "number" },
@@ -38,12 +53,13 @@
 
                 var ProductCollectionWrapper = kendo.backboneCollection(ProductWrapper);
 
-                products.on("change remove", function() {
+                products.on("change remove add", function() {
                     $("#log").text(kendo.stringify(products.toJSON()));
                 });
 
                 $("#log").text(kendo.stringify(products.toJSON()));
 
+                var wrappedProducts = new ProductCollectionWrapper(products);
                 $("#grid").kendoGrid({
                     editable: true,
                     toolbar: ["create"],
@@ -52,9 +68,51 @@
                         schema: {
                             model: ProductWrapper
                         },
-                        data: new ProductCollectionWrapper(products)
+                        data: wrappedProducts
                     }
                 });
+
+                $("#setBackbone")
+                    .click(function(event) {
+                        event.preventDefault();
+                        products.at(0).set("Name", "setBackbone");
+                    });
+
+                $("#setKendo")
+                    .click(function(event) {
+                        event.preventDefault();
+                        wrappedProducts[0].set("Name", "setKendo");
+                    });
+
+                $("#popBackbone")
+                    .click(function(event) {
+                        event.preventDefault();
+                        products.pop();
+                    });
+
+                $("#popKendo")
+                    .click(function(event) {
+                        event.preventDefault();
+                        wrappedProducts.pop();
+                    });
+
+                $("#pushBackbone")
+                    .click(function(event) {
+                        event.preventDefault();
+                        var newProduct = new Product();
+                        newProduct.set('ProductID', + (products.length+1));
+                        newProduct.set('Name','Product #' + (products.length+1));
+                        products.push(newProduct);
+                    });
+
+                $("#pushKendo")
+                    .click(function(event) {
+                        event.preventDefault();
+                        wrappedProducts.push({
+                            ProductID: (products.length+1),
+                            Name: "Product #" + (products.length+1)
+                        })
+                    });
         </script>
     </body>
 </html>
