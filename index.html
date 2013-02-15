@@ -61,9 +61,11 @@
 
                 var wrappedProducts = new ProductCollectionWrapper(products);
                 $("#grid").kendoGrid({
-                    editable: true,
+                    editable: {
+                        mode: 'inline'
+                    },
                     toolbar: ["create"],
-                    columns: ["ProductID", "Name", { command: "destroy" }],
+                    columns: ["ProductID", "Name", { command: ["edit","destroy"] }],
                     dataSource: {
                         schema: {
                             model: ProductWrapper
