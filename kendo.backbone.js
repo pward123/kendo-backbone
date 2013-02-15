@@ -1,173 +1,164 @@
 (function () {
 var Model = kendo.data.Model,
     ObservableArray = kendo.data.ObservableArray;
+    defaultValues = {
+        "string": "",
+        "number": 0,
+        "date": new Date(),
+        "boolean": false,
+        "default": ""
+    };
 
-function wrapBackboneModel(backboneModel, fields) {
+
+function wrapBackboneModel(BackboneModel, options) {
+    options = options || { id: "id" };
+    if ((typeof options.fields === "undefined") || (options.fields === null) || (options.fields.length < 1)) {
+        throw new "options.fields is required"
+    }
+
     return Model.define({
-        handlingEvent: false,
-        fields: fields,
-
-        defaultValues: {
-            "string": "",
-            "number": 0,
-            "date": new Date(),
-            "boolean": false,
-            "default": ""
-        },
+        fields: options.fields,
+        id: options.id,
 
         // Constructor
         init: function(model) {
+            var that = this;
 
-            if (!(model instanceof backboneModel)) {
-                model = new backboneModel(model);
+            if (!(model instanceof BackboneModel)) {
+              model = new BackboneModel(model);
             }
 
             // Retain a reference to the backbone model
-            this.backbone = model;
+            that.backbone = model;
 
             // Super
-            Model.fn.init.call(this, model.toJSON());
+            Model.fn.init.call(that, model.toJSON());
 
             // Listen to all change events for the backbone model
-            model.on("change", this.backboneChanged, this);
+            that.backbone.on("change", that.backboneChanged, that);
 
             // Listen to our own change event
-            this.bind("change", this.kendoChanged);
+            that.bind("change", that.kendoChanged);
 
             // Set any unspecified fields to their default values
-            for (fieldName in fields) {
-                field = fields[fieldName];
-                if (!this.backbone.has(fieldName)) {
-                    this.backbone.set(fieldName, field.defaultValue !== undefined ? field.defaultValue : this.defaultValues[field.type.toLowerCase()]);
+            var fieldName;
+            for (fieldName in that.fields) {
+                var field = that.fields[fieldName];
+                if (!that.backbone.has(fieldName)) {
+                    that.backbone.set(fieldName, field.defaultValue !== undefined ? field.defaultValue : defaultValues[field.type.toLowerCase()]);
                 }
             }
         },
 
         // Destructor
         destroy: function() {
+            var that = this;
+
             // Stop listening to backbone events on the model
-            model.off(null, null, this);
+            that.backbone.off(null, null, that);
 
             // Call super
-            Model.fn.destroy.call(this);
+            Model.fn.destroy.call(that);
         },
 
         // When the backbone model has changed
         backboneChanged: function(model, options) {
-            // Prevent reentrancy
-            if (!this.handlingEvent) {
-                this.handlingEvent = true;
-                try {
-                    // Get a copy of the model attributes that changed
-                    var changed = model.changedAttributes();
+            var that = this;
 
-                    // For each attribute that changed, update the kendo field
-                    _.each(changed, function(value, key, list) {
-                        this.set(key, value);
-                    }, this);
-                } finally {
-                    this.handlingEvent = false;
-                }
+            options = options || {};
+            var ignore = options.ignoreBBChanged || false;
+            if (!ignore) {
+                // Get a copy of the model attributes that changed
+                var changed = model.changedAttributes();
+
+                // For each attribute that changed, update the kendo field
+                _.each(changed, function(value, key, list) {
+                    that.set(key, value);
+                });
             }
         },
 
         kendoChanged: function(e) {
-            // Prevent reentrancy
-            if (!this.handlingEvent) {
-                this.handlingEvent = true;
-                try {
-                    // Set the backbone field
-                    this.backbone.set(e.field, this.get(e.field));
-                } finally {
-                    this.handlingEvent = false;
-                }
-            }
+            var that = this;
+
+            // Set the backbone field
+            that.backbone.set(e.field, that.get(e.field), { ignoreBBChanged: true });
         }
     });
 }
 
-function wrapBackboneCollection(model) {
+function wrapBackboneCollection(ModelWrapper) {
     return ObservableArray.extend( {
-        handlingEvent: false,
-
         init: function(collection) {
+            var that = this;
+
             // Retain a reference to the backbone collection
-            this.backbone = collection;
+            that.backbone = collection;
 
             // Call super
-            ObservableArray.fn.init.call(this, this.backbone.models, model);
+            ObservableArray.fn.init.call(that, that.backbone.models, ModelWrapper);
 
             // Listen to backbone events
-            this.backbone.on("add", this.backboneAdded, this);
-            this.backbone.on("remove", this.backboneRemoved, this);
+            that.backbone.on("add", that.backboneAdded, that);
+            that.backbone.on("remove", that.backboneRemoved, that);
 
             // Listen to our own change event
-            this.bind("change", this.kendoChanged);
+            that.bind("change", that.kendoChanged);
         },
 
         // Destructor
         destroy: function() {
+            var that = this;
+
             // Stop listening to backbone events
-            this.backbone.off(null, null, this);
+            that.backbone.off(null, null, that);
 
             // Call super
-            ObservableArray.fn.destroy.call(this);
+            ObservableArray.fn.destroy.call(that);
         },
 
         // When a model is added to the backbone collection
-        backboneAdded: function(model) {
-            // Prevent reentrancy
-            if (!this.handlingEvent) {
-                this.handlingEvent = true;
-                try {
-                    // Add it to the kendo array
-                    var index = this.backbone.indexOf(model);
-                    this.splice(index, 0, model);
-                } finally {
-                    this.handlingEvent = false;
-                }
+        backboneAdded: function(model, collection, options) {
+            var that = this;
+            options = options || {};
+            var ignore = options.ignoreBBAdded || false;
+            if (!ignore) {
+                // Add it to the kendo array
+                var index = that.backbone.indexOf(model);
+                that.splice(index, 0, model);
             }
         },
 
         // When a model is removed from the backbone collection
         backboneRemoved: function(model, collection, options) {
-            // Prevent reentrancy
-            if (!this.handlingEvent) {
-                this.handlingEvent = true;
-                try {
-                    // Remove it from the kendo array
-                    this.splice(options.index, 1);
-                } finally {
-                    this.handlingEvent = false;
-                }
+            var that = this;
+            options = options || {};
+            var ignore = options.ignoreBBRemoved || false;
+            if (!ignore) {
+                // Remove it from the kendo array
+                that.splice(options.index, 1);
             }
         },
 
         // When models are changed in the kendo collection
         kendoChanged: function(e) {
-            // Prevent reentrancy
-            if (!this.handlingEvent) {
-                this.handlingEvent = true;
-                try {
-                    // When models are added to the kendo collection
-                    if (e.action === "add") {
-                        // Add each model to the backbone collection
-                        var index = e.index;
-                        _.each(e.items, function(model) {
-                            this.backbone.add(model.backbone, {at: index});
-                            index++;
-                        }, this)
+            var that = this;
 
-                    // When models are removed from the kendo collection
-                    } else if (e.action === "remove") {
-                        // Remove each model from the backbone collection
-                        _.each(e.items, function(model) {
-                            this.backbone.remove(model.backbone);
-                        }, this)
-                    }
-                } finally {
-                    this.handlingEvent = false;
-                }
+            // When models are added to the kendo collection
+            if (e.action === "add") {
+                // Add each model to the backbone collection
+                var index = e.index;
+                _.each(e.items, function(model) {
+                    that.backbone.add(model.backbone, {at: index, ignoreBBAdded: true});
+                    index++;
+                })
+
+            // When models are removed from the kendo collection
+            } else if (e.action === "remove") {
+                // Remove each model from the backbone collection
+                _.each(e.items, function(model) {
+                    that.backbone.remove(model.backbone, {ignoreBBRemoved: true});
+                })
             }
         }
     });

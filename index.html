@@ -47,8 +47,11 @@
                 products.push(product);
 
                 var ProductWrapper = kendo.backboneModel(Product, {
-                    ProductID: { type: "number" },
-                    Name: { type: "string" }
+                    id: "ProductID",
+                    fields: {
+                        ProductID: { type: "number" },
+                        Name: { type: "string" }
+                    }
                 });
 
                 var ProductCollectionWrapper = kendo.backboneCollection(ProductWrapper);
