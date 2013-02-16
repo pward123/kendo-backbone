@@ -46,7 +46,9 @@
                 product.set("Name","Coffee");
                 products.push(product);
 
-                var ProductWrapper = kendo.backboneModel(Product, {
+                var ProductDataSource = kendo.backboneDataSource(Product);
+                var productsDataSource = new ProductDataSource({
+                    collection: products,
                     id: "ProductID",
                     fields: {
                         ProductID: { type: "number" },
@@ -54,27 +56,19 @@
                     }
                 });
 
-                var ProductCollectionWrapper = kendo.backboneCollection(ProductWrapper);
-
                 products.on("change remove add", function() {
                     $("#log").text(kendo.stringify(products.toJSON()));
                 });
 
                 $("#log").text(kendo.stringify(products.toJSON()));
 
-                var wrappedProducts = new ProductCollectionWrapper(products);
                 $("#grid").kendoGrid({
                     editable: {
                         mode: 'inline'
                     },
                     toolbar: ["create"],
                     columns: ["ProductID", "Name", { command: ["edit","destroy"] }],
-                    dataSource: {
-                        schema: {
-                            model: ProductWrapper
-                        },
-                        data: wrappedProducts
-                    }
+                    dataSource: productsDataSource
                 });
 
                 $("#setBackbone")
@@ -86,7 +80,7 @@
                 $("#setKendo")
                     .click(function(event) {
                         event.preventDefault();
-                        wrappedProducts[0].set("Name", "setKendo");
+                        productsDataSource.get(1).set("Name", "setKendo");
                     });
 
                 $("#popBackbone")
@@ -98,7 +92,7 @@
                 $("#popKendo")
                     .click(function(event) {
                         event.preventDefault();
-                        wrappedProducts.pop();
+                        productsDataSource.remove(productsDataSource.get(productsDataSource.total()));
                     });
 
                 $("#pushBackbone")
@@ -113,7 +107,7 @@
                 $("#pushKendo")
                     .click(function(event) {
                         event.preventDefault();
-                        wrappedProducts.push({
+                        productsDataSource.add({
                             ProductID: (products.length+1),
                             Name: "Product #" + (products.length+1)
                         })

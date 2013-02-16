@@ -1,5 +1,6 @@
 (function () {
-var Model = kendo.data.Model,
+var DataSource = kendo.data.DataSource,
+    Model = kendo.data.Model,
     ObservableArray = kendo.data.ObservableArray;
     defaultValues = {
         "string": "",
@@ -164,6 +165,32 @@ function wrapBackboneCollection(ModelWrapper) {
     });
 }
 
+function getDataSource(BackboneModel) {
+    return DataSource.extend({
+        init: function(options) {
+            var that = this;
+
+            options = options || {};
+            if (!(options.collection instanceof Backbone.Collection)) {
+                throw new "options.collection must be an instance of Backbone.Collection";
+            }
+
+            var ModelWrapper = wrapBackboneModel(BackboneModel, options);
+            var CollectionWrapper = wrapBackboneCollection(ModelWrapper);
+
+            options = _.extend(options,{
+                schema: {
+                    model: ModelWrapper
+                },
+                data: new CollectionWrapper(options.collection)
+            });
+
+            DataSource.fn.init.call(that, options);
+        }
+    });
+}
+
 kendo.backboneCollection = wrapBackboneCollection;
 kendo.backboneModel = wrapBackboneModel;
+kendo.backboneDataSource = getDataSource;
 })();
